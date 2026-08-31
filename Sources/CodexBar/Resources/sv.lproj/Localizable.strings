@@ -310,6 +310,7 @@
 "Refresh cadence" = "Uppdateringsintervall";
 "Remote" = "Fjärr";
 "Remove" = "Ta bort";
+"Remove %@ and its usage snapshots from iCloud?" = "Remove %@ and its usage snapshots from iCloud?";
 "Remove Codex account?" = "Ta bort Codex-konto?";
 "Remove \\(account.email) from CodexBar? Its managed Codex home will be deleted." = "Ta bort \\(account.email) från CodexBar? Dess hanterade Codex-hem tas bort.";
 "Remove \\(email) from CodexBar? Its managed Codex home will be deleted." = "Ta bort \\(email) från CodexBar? Dess hanterade Codex-hem tas bort.";

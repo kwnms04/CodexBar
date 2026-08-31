@@ -310,6 +310,7 @@
 "Refresh cadence" = "새로 고침 주기";
 "Remote" = "원격";
 "Remove" = "제거";
+"Remove %@ and its usage snapshots from iCloud?" = "Remove %@ and its usage snapshots from iCloud?";
 "Remove Codex account?" = "Codex 계정을 제거하시겠습니까?";
 "Remove \\(account.email) from CodexBar? Its managed Codex home will be deleted." = "CodexBar에서 \\(account.email)을(를) 제거하시겠습니까? 관리되는 Codex 홈이 삭제됩니다.";
 "Remove \\(email) from CodexBar? Its managed Codex home will be deleted." = "CodexBar에서 \\(email)을(를) 제거하시겠습니까? 관리되는 Codex 홈이 삭제됩니다.";

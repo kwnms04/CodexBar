@@ -309,6 +309,7 @@
 "Refresh cadence" = "Nhịp làm mới";
 "Remote" = "Từ xa";
 "Remove" = "Xóa";
+"Remove %@ and its usage snapshots from iCloud?" = "Remove %@ and its usage snapshots from iCloud?";
 "Remove Codex account?" = "Xóa tài khoản Codex?";
 "Remove \\(account.email) from CodexBar? Its managed Codex home will be deleted." = "Xóa \\(account.email) khỏi CodexBar ? Trang chủ Codex được quản lý của nó sẽ bị xóa.";
 "Remove \\(email) from CodexBar? Its managed Codex home will be deleted." = "Xóa \\(email) khỏi CodexBar ? Trang chủ Codex được quản lý của nó sẽ bị xóa.";

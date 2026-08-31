@@ -5,6 +5,7 @@ import SwiftUI
 struct ICloudSyncPane: View {
     @Bindable var settings: SettingsStore
     @Bindable var state: CloudSyncState
+    @State private var deviceToRemove: DeviceSyncPayload?
     private static let securityFootnote =
         "Secrets use iCloud end-to-end encryption via encryptedValues. " +
         "Hooks and machine-local paths never sync."
@@ -68,7 +69,9 @@ struct ICloudSyncPane: View {
                     ForEach(self.devices, id: \.deviceID) { device in
                         ICloudSyncDeviceRow(
                             device: device,
-                            isCurrentDevice: device.deviceID == self.settings.iCloudSyncDeviceID)
+                            isCurrentDevice: device.deviceID == self.settings.iCloudSyncDeviceID,
+                            canRemove: self.settings.iCloudSyncEnabled && self.syncCanRun,
+                            remove: { self.deviceToRemove = device })
                     }
                 }
             } header: {
@@ -78,6 +81,34 @@ struct ICloudSyncPane: View {
             }
         }
         .formStyle(.grouped)
+        .confirmationDialog(
+            self.removalPrompt,
+            isPresented: self.removalPromptBinding,
+            titleVisibility: .visible)
+        {
+            Button(L("Remove"), role: .destructive) {
+                if let device = self.deviceToRemove {
+                    self.state.removeDevice?(device.deviceID)
+                }
+                self.deviceToRemove = nil
+            }
+            Button(L("Cancel"), role: .cancel) { self.deviceToRemove = nil }
+        }
+    }
+
+    private var removalPrompt: String {
+        guard let device = self.deviceToRemove else { return "" }
+        return L("Remove %@ and its usage snapshots from iCloud?", device.hostName)
+    }
+
+    private var removalPromptBinding: Binding<Bool> {
+        Binding(
+            get: { self.deviceToRemove != nil },
+            set: { presented in
+                if !presented {
+                    self.deviceToRemove = nil
+                }
+            })
     }
 
     private var syncCanBeEnabled: Bool {
@@ -147,6 +178,8 @@ struct ICloudSyncPane: View {
 private struct ICloudSyncDeviceRow: View {
     let device: DeviceSyncPayload
     let isCurrentDevice: Bool
+    let canRemove: Bool
+    let remove: () -> Void
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -165,6 +198,12 @@ private struct ICloudSyncDeviceRow: View {
                     .padding(.vertical, 2)
                     .background(.quaternary, in: Capsule())
             }
+            Button(action: self.remove) {
+                Image(systemName: "trash")
+            }
+            .buttonStyle(.borderless)
+            .disabled(!self.canRemove)
+            .help(L("Remove"))
         }
     }
 }

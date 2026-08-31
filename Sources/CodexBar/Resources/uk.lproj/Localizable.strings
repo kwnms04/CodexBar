@@ -309,6 +309,7 @@
 "Refresh cadence" = "Оновити каденцію";
 "Remote" = "Дистанційний";
 "Remove" = "Видалити";
+"Remove %@ and its usage snapshots from iCloud?" = "Remove %@ and its usage snapshots from iCloud?";
 "Remove Codex account?" = "Видалити обліковий запис Codex?";
 "Remove \\(account.email) from CodexBar? Its managed Codex home will be deleted." = "Видалити \\(account.email) з CodexBar? Його керовану домашню сторінку Codex буде видалено.";
 "Remove \\(email) from CodexBar? Its managed Codex home will be deleted." = "Видалити \\(email) з CodexBar? Його керовану домашню сторінку Codex буде видалено.";

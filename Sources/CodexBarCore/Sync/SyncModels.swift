@@ -166,8 +166,12 @@ public struct DeviceSyncPayload: Codable, Sendable {
         self.lastSeen = lastSeen
     }
 
+    public static func recordName(for deviceID: String) -> String {
+        "device-\(deviceID)"
+    }
+
     public var recordName: String {
-        "device-\(self.deviceID)"
+        Self.recordName(for: self.deviceID)
     }
 }
 

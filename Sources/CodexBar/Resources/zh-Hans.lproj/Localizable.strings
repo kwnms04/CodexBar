@@ -319,6 +319,7 @@
 "Refresh cadence" = "刷新频率";
 "Remote" = "远程";
 "Remove" = "移除";
+"Remove %@ and its usage snapshots from iCloud?" = "Remove %@ and its usage snapshots from iCloud?";
 "Remove Codex account?" = "移除 Codex 账户？";
 "Remove \\(account.email) from CodexBar? Its managed Codex home will be deleted." = "要从 CodexBar 中移除 \\(account.email) 吗？其托管的 Codex 主目录将被删除。";
 "Remove \\(email) from CodexBar? Its managed Codex home will be deleted." = "要从 CodexBar 中移除 \\(email) 吗？其托管的 Codex 主目录将被删除。";

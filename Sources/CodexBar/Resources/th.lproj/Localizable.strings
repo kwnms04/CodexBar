@@ -294,6 +294,7 @@
 "Refresh cadence" = "จังหวะการรีเฟรช";
 "Remote" = "ระยะไกล";
 "Remove" = "ลบ";
+"Remove %@ and its usage snapshots from iCloud?" = "Remove %@ and its usage snapshots from iCloud?";
 "Remove Codex account?" = "ลบบัญชี Codex?";
 "Remove \\(account.email) from CodexBar? Its managed Codex home will be deleted." = "ลบ \\(account.email) ออกจาก CodexBar? ระบบจะลบหน้าแรก Codex ที่มีการจัดการ";
 "Remove \\(email) from CodexBar? Its managed Codex home will be deleted." = "ลบ \\(email) ออกจาก CodexBar? ระบบจะลบหน้าแรก Codex ที่มีการจัดการ";

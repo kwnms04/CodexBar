@@ -309,6 +309,7 @@
 "Refresh cadence" = "更新間隔";
 "Remote" = "リモート";
 "Remove" = "削除";
+"Remove %@ and its usage snapshots from iCloud?" = "Remove %@ and its usage snapshots from iCloud?";
 "Remove Codex account?" = "Codex アカウントを削除しますか？";
 "Remove \\(account.email) from CodexBar? Its managed Codex home will be deleted." = "\\(account.email) を CodexBar から削除しますか？管理対象の Codex ホームは削除されます。";
 "Remove \\(email) from CodexBar? Its managed Codex home will be deleted." = "\\(email) を CodexBar から削除しますか？管理対象の Codex ホームは削除されます。";

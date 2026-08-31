@@ -25,6 +25,8 @@ final class CloudSyncState {
     var status = SyncStatus()
     var fleetDevices: [String: DeviceSyncPayload] = [:]
     var fleetSnapshots: [String: AccountSnapshotSyncPayload] = [:]
+    /// Wired by `CloudSyncCoordinator`; the settings pane's only route into the sync engine.
+    @ObservationIgnored var removeDevice: ((String) -> Void)?
 }
 
 struct CloudSyncQuotaRetryState: Equatable, Sendable {
@@ -150,6 +152,21 @@ enum CloudSyncDirtyState {
     }
 }
 
+enum CloudSyncDeviceRemoval {
+    /// Everything a device owns in the sync zone: its device record plus every usage snapshot it
+    /// published. Snapshots outlive the device record otherwise, and the menu keeps projecting them.
+    static func recordNames(
+        forDeviceID deviceID: String,
+        snapshots: [String: AccountSnapshotSyncPayload]) -> Set<String>
+    {
+        var names: Set<String> = [DeviceSyncPayload.recordName(for: deviceID)]
+        for (name, snapshot) in snapshots where snapshot.deviceID == deviceID {
+            names.insert(name)
+        }
+        return names
+    }
+}
+
 enum CloudSyncSnapshotMigration {
     static func obsoleteRecordNames(
         liveSnapshots: [AccountSnapshotSyncPayload],
@@ -172,6 +189,7 @@ enum CloudSyncSnapshotMigration {
             let recordID = CKRecord.ID(recordName: name, zoneID: zoneID)
             desiredRecords.removeValue(forKey: recordID)
             hashes.removeValue(forKey: name)
+            envelope.fleetDevices.removeValue(forKey: name)
             envelope.fleetSnapshots.removeValue(forKey: name)
             envelope.encodedSystemFields.removeValue(forKey: name)
             envelope.recordMetadata.removeValue(forKey: name)
@@ -295,6 +313,13 @@ enum CloudSyncSnapshotMigration {
         })
     }
 
+    /// Terminal failures that left the record in place. `unknownItem` is excluded: that record is
+    /// already gone, so the delete succeeded in every way the caller cares about.
+    static func restorableFailedDeleteNames(_ failures: [CKRecord.ID: CKError]) -> Set<String> {
+        self.finishedFailedDeleteNames(failures).subtracting(
+            failures.compactMap { $0.value.code == .unknownItem ? $0.key.recordName : nil })
+    }
+
     static func abandonedReplacementNames(
         failures: [String: CKError],
         pendingReplacements: Set<String>) -> Set<String>
@@ -396,6 +421,8 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
     private var persistenceEnvelope: CloudSyncPersistence.Envelope
     private var engine: CKSyncEngine?
     private var desiredRecords: [CKRecord.ID: CKRecord] = [:]
+    private var removedDevices: [String: DeviceSyncPayload] = [:]
+    private var removedSnapshots: [String: AccountSnapshotSyncPayload] = [:]
     private var enabled = false
     private var configPushTask: Task<Void, Never>?
     private var snapshotPushTask: Task<Void, Never>?
@@ -733,6 +760,10 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
             appVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown",
             lastSeen: Date())
         let recordID = self.recordID(named: payload.recordName)
+        // This Mac may have been removed before quitting. Re-registering supersedes that removal,
+        // so drop the pending delete rather than letting it retire the record we are about to save.
+        self.cancelPendingSnapshotDeletes([payload.recordName])
+        self.forgetOptimisticRemoval([payload.recordName])
         let record = self.record(type: .device, id: recordID)
         record["schemaVersion"] = payload.schemaVersion as CKRecordValue
         record["deviceID"] = payload.deviceID as CKRecordValue
@@ -1249,6 +1280,38 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
 }
 
 extension CloudSyncEngine {
+    /// Removes a device from the fleet on every Mac on the account. The current Mac re-registers
+    /// itself the next time sync starts, which is why removal is offered for it too.
+    func removeDevice(deviceID: String) async {
+        let names = CloudSyncDeviceRemoval.recordNames(
+            forDeviceID: deviceID,
+            snapshots: self.persistenceEnvelope.fleetSnapshots)
+        for name in names {
+            self.removedDevices[name] = self.persistenceEnvelope.fleetDevices[name]
+            self.removedSnapshots[name] = self.persistenceEnvelope.fleetSnapshots[name]
+        }
+        let recordIDs = CloudSyncSnapshotMigration.drop(
+            names,
+            hashes: &self.lastSnapshotHashes,
+            envelope: &self.persistenceEnvelope,
+            desiredRecords: &self.desiredRecords,
+            zoneID: Self.zoneID)
+        self.rememberPendingSnapshotDeletes(names)
+        await MainActor.run {
+            for name in names {
+                self.state.fleetDevices.removeValue(forKey: name)
+                self.state.fleetSnapshots.removeValue(forKey: name)
+            }
+        }
+        guard let engine = self.engine else { return }
+        engine.state.add(pendingRecordZoneChanges: recordIDs.map { .deleteRecord($0) })
+        do {
+            try await engine.sendChanges(.init(scope: .recordIDs(recordIDs)))
+        } catch {
+            await self.record(error: error)
+        }
+    }
+
     private func finishConfirmedSnapshotMigrations(
         savedRecordNames: [String],
         syncEngine: CKSyncEngine) async
@@ -1287,6 +1350,9 @@ extension CloudSyncEngine {
         var finished = Set(deletedIDs.map(\.recordName))
         finished.formUnion(CloudSyncSnapshotMigration.finishedFailedDeleteNames(failures))
         self.forgetPendingSnapshotDeletes(finished)
+        await self.restoreOptimisticallyRemoved(
+            CloudSyncSnapshotMigration.restorableFailedDeleteNames(failures))
+        self.forgetOptimisticRemoval(finished)
         for error in CloudSyncSnapshotMigration.reportableFailedDeletes(failures) {
             await self.record(error: error)
         }
@@ -1298,6 +1364,31 @@ extension CloudSyncEngine {
             self.rememberPendingSnapshotDeletes([recordID.recordName])
             let delay = failures[recordID].flatMap(CloudSyncSnapshotMigration.retryDelay(for:)) ?? 1
             self.scheduleDeleteRetry(recordID: recordID, after: delay)
+        }
+    }
+
+    /// A terminal delete failure means the record is still in CloudKit, so the row goes back
+    /// instead of hiding a device that was never removed.
+    private func restoreOptimisticallyRemoved(_ names: Set<String>) async {
+        var devices: [String: DeviceSyncPayload] = [:]
+        var snapshots: [String: AccountSnapshotSyncPayload] = [:]
+        for name in names {
+            devices[name] = self.removedDevices[name]
+            snapshots[name] = self.removedSnapshots[name]
+        }
+        guard !devices.isEmpty || !snapshots.isEmpty else { return }
+        self.persistenceEnvelope.fleetDevices.merge(devices) { _, restored in restored }
+        self.persistenceEnvelope.fleetSnapshots.merge(snapshots) { _, restored in restored }
+        await MainActor.run {
+            self.state.fleetDevices.merge(devices) { _, restored in restored }
+            self.state.fleetSnapshots.merge(snapshots) { _, restored in restored }
+        }
+    }
+
+    private func forgetOptimisticRemoval(_ names: Set<String>) {
+        for name in names {
+            self.removedDevices.removeValue(forKey: name)
+            self.removedSnapshots.removeValue(forKey: name)
         }
     }
 

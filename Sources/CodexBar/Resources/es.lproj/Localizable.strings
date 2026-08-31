@@ -309,6 +309,7 @@
 "Refresh cadence" = "Frecuencia de actualización";
 "Remote" = "Remoto";
 "Remove" = "Eliminar";
+"Remove %@ and its usage snapshots from iCloud?" = "Remove %@ and its usage snapshots from iCloud?";
 "Remove Codex account?" = "¿Eliminar la cuenta de Codex?";
 "Remove \\(account.email) from CodexBar? Its managed Codex home will be deleted." = "¿Eliminar \\(account.email) de CodexBar? Su directorio Codex gestionado se borrará.";
 "Remove \\(email) from CodexBar? Its managed Codex home will be deleted." = "¿Eliminar \\(email) de CodexBar? Su directorio Codex gestionado se borrará.";

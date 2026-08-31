@@ -35,6 +35,10 @@ final class CloudSyncCoordinator {
 
     func start() {
         self.observeSettings()
+        self.state.removeDevice = { [weak self] deviceID in
+            guard let self else { return }
+            Task { await self.engine.removeDevice(deviceID: deviceID) }
+        }
         self.configObserver = NotificationCenter.default.addObserver(
             forName: .codexbarProviderConfigDidChange,
             object: self.settings,
@@ -102,6 +106,7 @@ final class CloudSyncCoordinator {
             NotificationCenter.default.removeObserver(accountObserver)
         }
         self.resumeTask?.cancel()
+        self.state.removeDevice = nil
         self.configObserver = nil
         self.localFileConfigObserver = nil
         self.snapshotObserver = nil

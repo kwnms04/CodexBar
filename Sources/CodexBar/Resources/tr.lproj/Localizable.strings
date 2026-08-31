@@ -294,6 +294,7 @@
 "Refresh cadence" = "Yenileme sıklığı";
 "Remote" = "Uzak";
 "Remove" = "Kaldır";
+"Remove %@ and its usage snapshots from iCloud?" = "%@ ve kullanım anlık görüntüleri iCloud'dan kaldırılsın mı?";
 "Remove Codex account?" = "Codex hesabı kaldırılsın mı?";
 "Remove \\(account.email) from CodexBar? Its managed Codex home will be deleted." = "\\(account.email) CodexBar'dan kaldırılsın mı? Yönetilen Codex ana dizini silinecek.";
 "Remove \\(email) from CodexBar? Its managed Codex home will be deleted." = "\\(email) CodexBar'dan kaldırılsın mı? Yönetilen Codex ana dizini silinecek.";
