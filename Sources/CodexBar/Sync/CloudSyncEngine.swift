@@ -165,6 +165,19 @@ enum CloudSyncDeviceRemoval {
         }
         return names
     }
+
+    /// Usage Snapshots left behind by a Device Record that is already gone. CloudKit can confirm
+    /// the device delete and terminally reject one of its snapshot deletes in the same batch, and
+    /// the leftover snapshot would otherwise keep projecting into the fleet menu with no Macs row
+    /// left to remove it from.
+    static func orphanedSnapshotNames(
+        removedNames: Set<String>,
+        snapshots: [String: AccountSnapshotSyncPayload]) -> Set<String>
+    {
+        Set(snapshots.compactMap { name, snapshot in
+            removedNames.contains(DeviceSyncPayload.recordName(for: snapshot.deviceID)) ? name : nil
+        })
+    }
 }
 
 enum CloudSyncSnapshotMigration {
@@ -844,10 +857,16 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
             if !changes.savedRecords.isEmpty {
                 await MainActor.run { self.state.status.lastSuccessfulPushAt = Date() }
             }
-            // Only a push with nothing failing in it retires the banner. A batch that saved one
-            // record and failed a delete has not fixed the delete, and a fetch never does.
-            if changes.failedRecordSaves.isEmpty, changes.failedRecordDeletes.isEmpty,
-               !changes.savedRecords.isEmpty || !changes.deletedRecordIDs.isEmpty
+            // Only a push with nothing the user has to hear about retires the banner. A batch that
+            // saved one record and reported a failed delete has not fixed it, and a fetch never
+            // does. Records CloudKit no longer holds are removals that landed, so they clear the
+            // banner rather than block it.
+            let landedDeletes = CloudSyncSnapshotMigration.confirmedDeletedNames(
+                deletedIDs: changes.deletedRecordIDs,
+                failures: changes.failedRecordDeletes)
+            if changes.failedRecordSaves.isEmpty,
+               CloudSyncSnapshotMigration.reportableFailedDeletes(changes.failedRecordDeletes).isEmpty,
+               !changes.savedRecords.isEmpty || !landedDeletes.isEmpty
             {
                 await MainActor.run { self.state.status.lastError = nil }
             }
@@ -1374,6 +1393,9 @@ extension CloudSyncEngine {
     /// menu stop showing them. Both the local delete and a remote one land here.
     private func forgetFleetRecords(_ names: Set<String>) async {
         guard !names.isEmpty else { return }
+        let names = names.union(CloudSyncDeviceRemoval.orphanedSnapshotNames(
+            removedNames: names,
+            snapshots: self.persistenceEnvelope.fleetSnapshots))
         for name in names {
             self.persistenceEnvelope.encodedSystemFields.removeValue(forKey: name)
             self.persistenceEnvelope.recordMetadata.removeValue(forKey: name)

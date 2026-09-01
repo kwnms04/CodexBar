@@ -464,6 +464,32 @@ struct CloudSyncSnapshotMigrationDeleteRetryTests {
     }
 
     @Test
+    func `snapshots of a removed device go with it`() {
+        func snapshot(deviceID: String) -> AccountSnapshotSyncPayload {
+            AccountSnapshotSyncPayload(
+                provider: .codex,
+                deviceID: deviceID,
+                accountIdentity: "acct",
+                displayLabel: "owner@example.com",
+                usage: UsageSnapshot(
+                    primary: nil,
+                    secondary: nil,
+                    updatedAt: Date(timeIntervalSince1970: 100),
+                    identity: nil))
+        }
+        let removed = snapshot(deviceID: "removed")
+        let kept = snapshot(deviceID: "kept")
+
+        // CloudKit can confirm the Device Record delete and terminally reject one of its snapshot
+        // deletes in the same batch, leaving a snapshot with no Macs row to remove it from.
+        let orphans = CloudSyncDeviceRemoval.orphanedSnapshotNames(
+            removedNames: [DeviceSyncPayload.recordName(for: "removed")],
+            snapshots: [removed.recordName: removed, kept.recordName: kept])
+
+        #expect(orphans == [removed.recordName])
+    }
+
+    @Test
     func `queueing a delete leaves the fleet row until the delete lands`() {
         let recordName = DeviceSyncPayload.recordName(for: "stale")
         var envelope = CloudSyncPersistence.Envelope(stateSerialization: nil, encodedSystemFields: [:])
