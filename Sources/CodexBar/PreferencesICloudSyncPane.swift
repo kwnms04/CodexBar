@@ -58,6 +58,12 @@ struct ICloudSyncPane: View {
                     value: self.relativeTime(self.state.status.lastSuccessfulPushAt))
             } header: {
                 Text(L("Status"))
+            } footer: {
+                if let lastError = self.state.status.lastError {
+                    SettingsSectionFooter {
+                        Text(lastError).foregroundStyle(.red)
+                    }
+                }
             }
 
             Section {
@@ -71,13 +77,13 @@ struct ICloudSyncPane: View {
                             device: device,
                             isCurrentDevice: device.deviceID == self.settings.iCloudSyncDeviceID,
                             canRemove: self.settings.iCloudSyncEnabled && self.syncCanRun,
-                            remove: { self.deviceToRemove = device })
+                            onRemove: { self.deviceToRemove = device })
                     }
                 }
             } header: {
                 Text(L("Macs"))
             } footer: {
-                SettingsSectionFooter(L(Self.securityFootnote))
+                SettingsSectionFooter(self.macsFootnote)
             }
         }
         .formStyle(.grouped)
@@ -93,7 +99,26 @@ struct ICloudSyncPane: View {
                 self.deviceToRemove = nil
             }
             Button(L("Cancel"), role: .cancel) { self.deviceToRemove = nil }
+        } message: {
+            // Two Macs can share a host name, which is the case this issue is about, so the
+            // dialog has to say which row it means. Relative dates collide; absolute ones do not.
+            if let device = self.deviceToRemove {
+                Text(String(
+                    format: L("Last seen %@"),
+                    device.lastSeen.formatted(date: .abbreviated, time: .shortened)))
+            }
         }
+    }
+
+    /// A device row stays visible with syncing off, so the footer has to say why its remove
+    /// button is dead: the delete has to reach CloudKit, which needs the engine running. The
+    /// other two reasons a row cannot be removed — a paused sync and an unavailable iCloud
+    /// account — already show their own message further up, so this covers only the setting.
+    private var macsFootnote: String {
+        guard !self.settings.iCloudSyncEnabled, !self.devices.isEmpty else {
+            return L(Self.securityFootnote)
+        }
+        return L(Self.securityFootnote) + " " + L("Turn on iCloud Sync to remove a Mac.")
     }
 
     private var removalPrompt: String {
@@ -179,7 +204,7 @@ private struct ICloudSyncDeviceRow: View {
     let device: DeviceSyncPayload
     let isCurrentDevice: Bool
     let canRemove: Bool
-    let remove: () -> Void
+    let onRemove: () -> Void
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -198,7 +223,7 @@ private struct ICloudSyncDeviceRow: View {
                     .padding(.vertical, 2)
                     .background(.quaternary, in: Capsule())
             }
-            Button(action: self.remove) {
+            Button(action: self.onRemove) {
                 Image(systemName: "trash")
             }
             .buttonStyle(.borderless)
