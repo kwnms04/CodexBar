@@ -636,13 +636,18 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
         }
     }
 
-    func fetchChanges() async {
-        guard self.enabled, let engine = self.engine else { return }
+    /// Reports whether the fleet cache is current. A caller about to act on that cache
+    /// destructively has no grounds to when this comes back false.
+    @discardableResult
+    func fetchChanges() async -> Bool {
+        guard self.enabled, let engine = self.engine else { return false }
         do {
             try await engine.fetchChanges(.init(scope: .zoneIDs([Self.zoneID])))
             await MainActor.run { self.state.status.lastSuccessfulFetchAt = Date() }
+            return true
         } catch {
             await self.record(error: error)
+            return false
         }
     }
 
@@ -1311,6 +1316,10 @@ extension CloudSyncEngine {
             }
             return
         }
+        // The delete set is built from the fleet cache, so the cache has to be current: a usage
+        // snapshot published since the last fetch would otherwise outlive the device record it
+        // belongs to. A fetch that fails leaves no grounds to delete anything, and reports itself.
+        guard await self.fetchChanges() else { return }
         let names = CloudSyncDeviceRemoval.recordNames(
             forDeviceID: deviceID,
             snapshots: self.persistenceEnvelope.fleetSnapshots)

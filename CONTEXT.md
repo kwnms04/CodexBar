@@ -25,6 +25,11 @@ _Avoid_: Device ID, install ID, client ID
 The set of Devices syncing under a single iCloud account.
 _Avoid_: Cluster, group, network
 
+**Fleet Cache**:
+This Mac's copy of the Fleet, as of its last fetch. It is authoritative up to that moment and
+no further: anything published afterwards is missing from it until the next fetch.
+_Avoid_: Local state, mirror, replica
+
 **Usage Snapshot**:
 What one provider account's usage was at one moment, as seen on one Device. Snapshots are
 per-Device: two Devices reporting the same account hold separate Snapshots.
