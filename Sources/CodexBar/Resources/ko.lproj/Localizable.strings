@@ -18,14 +18,17 @@
 "Sign in to iCloud in System Settings to enable sync." = "Sign in to iCloud in System Settings to enable sync.";
 "iCloud access is restricted on this Mac." = "iCloud access is restricted on this Mac.";
 "Sync is paused: another Mac uses a newer version of CodexBar. Update to resume." = "Sync is paused: another Mac uses a newer version of CodexBar. Update to resume.";
+"Sync is not running yet. Try again in a moment." = "동기화가 아직 실행되지 않았습니다. 잠시 후 다시 시도하세요.";
 "Last successful fetch" = "Last successful fetch";
 "Last successful push" = "Last successful push";
 "Never" = "Never";
 "Macs" = "Macs";
 "No synced Macs yet." = "No synced Macs yet.";
 "Secrets use iCloud end-to-end encryption via encryptedValues. Hooks and machine-local paths never sync." = "Secrets use iCloud end-to-end encryption via encryptedValues. Hooks and machine-local paths never sync.";
+"Turn on iCloud Sync to remove a Mac." = "Mac을 제거하려면 iCloud Sync를 켜세요.";
 "Last seen %@" = "Last seen %@";
 "This Mac" = "This Mac";
+"Remove %@ and its usage snapshots from iCloud?" = "%@과(와) 사용량 스냅샷을 iCloud에서 제거하시겠습니까?";
 "another Mac" = "another Mac";
 "%dm ago" = "%dm ago";
 "%dh ago" = "%dh ago";
@@ -310,7 +313,6 @@
 "Refresh cadence" = "새로 고침 주기";
 "Remote" = "원격";
 "Remove" = "제거";
-"Remove %@ and its usage snapshots from iCloud?" = "Remove %@ and its usage snapshots from iCloud?";
 "Remove Codex account?" = "Codex 계정을 제거하시겠습니까?";
 "Remove \\(account.email) from CodexBar? Its managed Codex home will be deleted." = "CodexBar에서 \\(account.email)을(를) 제거하시겠습니까? 관리되는 Codex 홈이 삭제됩니다.";
 "Remove \\(email) from CodexBar? Its managed Codex home will be deleted." = "CodexBar에서 \\(email)을(를) 제거하시겠습니까? 관리되는 Codex 홈이 삭제됩니다.";
